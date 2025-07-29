@@ -6,8 +6,9 @@ go_venv/
 io/
 
 # == Files ==
-Usage.md
 # compiled Python files
 *.pyc
 # optimized Python files
 *.pyo
+# Pyinstaller
+*.spec

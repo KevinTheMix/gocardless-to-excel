@@ -17,14 +17,16 @@ def prepare(df, keep_words):
     df['Compte D'] = df['debtorAccount'].apply(lambda x: x['iban'] if isinstance(x, dict) and 'iban' in x else None)
     df['Créditeur'] = df['creditorName'].apply(lambda x: capitalize(x, keep_words) if isinstance(x, str) else x)
     df['Compte C'] = df['creditorAccount'].apply(lambda x: x['iban'] if isinstance(x, dict) and 'iban' in x else None)
+    df['Quoi'] = df['additionalInformation']
     df['Montant'] = df['transactionAmount'].apply(lambda x: float(x['amount']))
     df['Communication'] = df['additionalInformation']
-    return df[['Transaction ID', 'Date V/R', 'Débiteur', 'Compte D', 'Créditeur', 'Compte C', 'Montant', 'Communication']]
+    df['Sommaire'] = df['remittanceInformationUnstructured'].str.strip()
+    return df[['Transaction ID', 'Date V/R', 'Débiteur', 'Compte D', 'Créditeur', 'Compte C', 'Quoi', 'Montant', 'Communication', 'Sommaire']]
 
 def create(excel_file, sheet_name, df):
     df.to_excel(excel_file, sheet_name=sheet_name, index=False)
     print("Created new Excel file with transaction data")
-    exit(0)
+    sys.exit(0)
 
 def append(excel_file, sheet_name, df):
     columns = {
@@ -38,11 +40,13 @@ def append(excel_file, sheet_name, df):
         'Compte D': 8,          # H
         'Créditeur': 9,         # I
         'Compte C': 10,         # J
-        'Quoi': 11,             # K
-        'Montant': 12,          # L
-        #'Total': 13,           # M
-        'Communication': 14     # N
-        #'Commentaire':15       # O
+        #'Shop': 11,            # K
+        'Quoi': 12,             # L
+        'Communication': 13,    # M
+        'Montant': 14,          # N
+        #'Total': 15,           # O
+        #'Commentaire':16       # P
+        'Sommaire': 17          # Q
     }
 
     wb = load_workbook(excel_file)
@@ -58,7 +62,7 @@ def append(excel_file, sheet_name, df):
 
     if df_to_append.shape[0] == 0: 
         print('Nothing to append; Excel file already up-to-date. Exiting~')
-        exit(0)
+        sys.exit(0)
 
     # Write new rows
     print(df_to_append.shape[0], 'new rows to append')
@@ -73,6 +77,19 @@ def append(excel_file, sheet_name, df):
 
     print("Appended transaction data to existing Excel file")
     return row_start
+
+def get_mode(sommaire):
+    if not isinstance(sommaire, str): return None
+
+    s = sommaire.strip().upper() # Probably unnecessary
+    if s.startswith('VERSEMENT'): return 'In'
+    elif s.startswith('ORDRE PERMANENT'): return 'Ordre'
+    elif s.startswith('BANCONTACT ACHAT'): return 'Carte'
+    elif s.startswith('VIREMENT INSTANTANE'): return 'PC'
+    elif s.startswith('REMBOURSEMENT'): return 'Remboursement'
+    elif s.startswith('PARTICIPATION AUX FRAIS DE TENUE DE VOTRE COMPTE') or s.startswith('COUT GESTION CARTE DE DEBIT'): return 'Banque'
+    else: return 'UNKNOWN'
+
 
 def format(excel_file, sheet_name, row_start=0):
     wb = load_workbook(excel_file)
@@ -91,47 +108,66 @@ def format(excel_file, sheet_name, row_start=0):
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=1, max_col=1):
         for cell in row: # Transaction ID
             cell.font = smaller_font
-    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=2, max_col=2):
+    for i, row in enumerate(ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=2, max_col=2)):
         for cell in row: # Mois
             cell.font = small_font
-            cell.value = '=PROPER(TEXT(INDIRECT("C" & ROW()), "[$-40C]mmmm"))'
+            #cell.value = '=PROPER(TEXT(INDIRECT("C" & ROW()), "[$-40C]mmmm"))'
+            cell.value = f'=PROPER(TEXT(C{row_start + i},"[$-40C]mmmm"))'
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=3, max_col=3):
         for cell in row: # Date V/R
-            cell.alignment = Alignment(horizontal='center')
             cell.number_format = 'yyyy.mm.dd'
+
+    for i, row in enumerate(ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=6, max_col=6)):
+        for cell in row: # Mode
+            cell.value = get_mode(ws.cell(row=row_start + i, column=17).value)
+
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=7, max_col=7):
         for cell in row: # Débiteur
             cell.alignment = Alignment(horizontal='left')
+            cell.font = small_font if len(cell.value) > 26 else font
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=8, max_col=8):
         for cell in row: # Compte D
             cell.font = smallest_font
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=9, max_col=9):
         for cell in row: # Créditeur
             cell.alignment = Alignment(horizontal='left')
+            cell.font = small_font if len(cell.value) > 26 else font
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=10, max_col=10):
         for cell in row: # Compte C
             cell.font = smallest_font
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=12, max_col=12):
+        for cell in row: # Quoi
+            cell.alignment = Alignment(horizontal='left')
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=13, max_col=13):
+        for cell in row: # Communication
+            cell.alignment = Alignment(horizontal='left')
+            cell.font = smaller_font
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=14, max_col=14):
         for cell in row: # Montant
             cell.alignment = Alignment(horizontal='right')
+            cell.font = small_font
             cell.number_format = '0.00'
-    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=13, max_col=13):
+    for i, row in enumerate(ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=15, max_col=15)):
         for cell in row: # Total
             cell.alignment = Alignment(horizontal='right')
             cell.font = bold_font
             cell.number_format = '0.00'
-            cell.value = '=INDIRECT("L" & ROW())'
-    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=14, max_col=14):
-        for cell in row: # Communication
+            # cell.value = '=INDIRECT("N" & ROW())'
+            cell.value = f'=N{row_start + i}'
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=16, max_col=16):
+        for cell in row: # Commentaire
+            cell.alignment = Alignment(horizontal='left')
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=17, max_col=17):
+        for cell in row: # Sommaire
             cell.alignment = Alignment(horizontal='left')
             cell.font = smaller_font
 
     wb.save(excel_file)
 
-def main(transactions_file, excel_file, sheet_name):
+def main(transactions_file, excel_file, sheet_name='Compte'):
     if not os.path.exists(transactions_file):
         print('Transactions file is missing. Aborting.')
-        exit(1)
+        sys.exit(1)
 
     transactions = load_json(transactions_file)
     df = pd.DataFrame(transactions['transactions']['booked'])
@@ -141,7 +177,7 @@ def main(transactions_file, excel_file, sheet_name):
     if not os.path.exists(excel_file):
         #create(excel_file, sheet_name, filtered) # Recreate
         print('The Excel file must exist prior to using this script')
-        exit(2)
+        sys.exit(2)
 
     row_start = append(excel_file, sheet_name, filtered)
     format(excel_file, sheet_name, row_start)
