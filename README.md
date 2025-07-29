@@ -21,12 +21,15 @@ Then uses pandas/openpyxl to parse that json and append it as rows in an existin
 
 * create a [user secret](https://bankaccountdata.gocardless.com/user-secrets)
 * HTTP POST to get access (& refresh) token, save it in a file
-* (optional) HTTP GET banks list (Belfius = **BELFIUS_GKCCBEBB**)
+* (optional) HTTP GET banks list
 * (optional) HTTP POST end user agreement (can change history days)
 * HTTP POST to create a requisition (build a link to bank via OAuth)
-  * that is similar to <https://bankaccountdata.gocardless.com/data>, but must be done here programmatically
-  * set <http://localhost> as return/redirect filler URL
-  * response of request contains a _link_ which must be opened in a browser
-  * after bank authentication (via ItsMe), browser gets redirected to localhost with a _ref_ parameter (ie requisition ID)
+  * set <http://localhost> as return/redirect filler URL (leads nowhere, does not matter)
+  * POST response contains a _link_ (opened in a browser)
+  * after bank authentication (via ItsMe), browser gets redirected to localhost URL with a _ref_ parameter (ie requisition ID)
 * HTTP GET accounts, passing requisition ID
 * HTTP GET transactions, passing account ID
+
+## Usage
+
+* `*/main.py <secret_file> <excel_file> <excel_sheet>`

@@ -3,19 +3,16 @@
 #from datetime import datetime, timedelta
 from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Alignment, Font, NamedStyle, numbers
+from lib.json_io import load_json, save_json
 from lib.string import capitalize
 import json
 import os
 import pandas as pd
 import sys
 
-def load_json(file_path):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
 def prepare(df, keep_words):
-    df['Transaction ID'] = df['transactionId']
-    df['Date V/R'] = df['valueDate']
+    df['Transaction ID'] = df['transactionId'].astype(str)
+    df['Date V/R'] = pd.to_datetime(df['valueDate'])
     df['Débiteur'] = df['debtorName'].apply(lambda x: capitalize(x, keep_words) if isinstance(x, str) else x)
     df['Compte D'] = df['debtorAccount'].apply(lambda x: x['iban'] if isinstance(x, dict) and 'iban' in x else None)
     df['Créditeur'] = df['creditorName'].apply(lambda x: capitalize(x, keep_words) if isinstance(x, str) else x)
@@ -53,7 +50,6 @@ def append(excel_file, sheet_name, df):
 
     # Find index of that ID in the DataFrame
     last_known_id = ws[ws.max_row][0].value
-    #print(last_known_id)
     if last_known_id in df['Transaction ID'].values:
         last_index = df.index[df['Transaction ID'] == last_known_id][0]
         df_to_append = df.iloc[last_index + 1:]
@@ -62,9 +58,10 @@ def append(excel_file, sheet_name, df):
 
     if df_to_append.shape[0] == 0: 
         print('Nothing to append; Excel file already up-to-date. Exiting~')
-        exit(1)
+        exit(0)
 
     # Write new rows
+    print(df_to_append.shape[0], 'new rows to append')
     row_start = ws.max_row + 1
     df_to_append = df_to_append.fillna('-')
     for i, (_, row) in enumerate(df_to_append.iterrows(), start=row_start):
@@ -82,8 +79,9 @@ def format(excel_file, sheet_name, row_start=0):
     ws = wb[sheet_name]
 
     font = Font(name='Verdana', size=8)
-    medium_font = Font(name='Verdana', size=7)
-    small_font = Font(name='Verdana', size=6)
+    small_font = Font(name='Verdana', size=7)
+    smaller_font = Font(name='Verdana', size=6)
+    smallest_font = Font(name='Verdana', size=5)
     bold_font = Font(name='Verdana', size=8, bold=True)
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
         for cell in row:
@@ -92,23 +90,27 @@ def format(excel_file, sheet_name, row_start=0):
 
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=1, max_col=1):
         for cell in row: # Transaction ID
-            cell.font = small_font
+            cell.font = smaller_font
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=2, max_col=2):
         for cell in row: # Mois
-            cell.font = medium_font
+            cell.font = small_font
             cell.value = '=PROPER(TEXT(INDIRECT("C" & ROW()), "[$-40C]mmmm"))'
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=3, max_col=3):
+        for cell in row: # Date V/R
+            cell.alignment = Alignment(horizontal='center')
+            cell.number_format = 'yyyy.mm.dd'
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=7, max_col=7):
         for cell in row: # Débiteur
             cell.alignment = Alignment(horizontal='left')
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=8, max_col=8):
         for cell in row: # Compte D
-            cell.font = small_font
+            cell.font = smallest_font
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=9, max_col=9):
         for cell in row: # Créditeur
             cell.alignment = Alignment(horizontal='left')
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=10, max_col=10):
         for cell in row: # Compte C
-            cell.font = small_font
+            cell.font = smallest_font
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=12, max_col=12):
         for cell in row: # Montant
             cell.alignment = Alignment(horizontal='right')
@@ -122,6 +124,7 @@ def format(excel_file, sheet_name, row_start=0):
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=14, max_col=14):
         for cell in row: # Communication
             cell.alignment = Alignment(horizontal='left')
+            cell.font = smaller_font
 
     wb.save(excel_file)
 
