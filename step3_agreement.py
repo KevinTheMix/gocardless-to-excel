@@ -13,7 +13,7 @@ def get_agreement(access_token, max_days):
     }
     agreement_json = {
         'institution_id': 'BELFIUS_GKCCBEBB',
-        'max_historical_days': max_days, # How many 'bookingDate' days far back
+        'max_historical_days': max_days, # How many 'bookingDate' days far back (eg 0 < days < 730 for Belfius)
         'access_valid_for_days': '30',
         'access_scope': ['transactions']
     }
@@ -21,7 +21,7 @@ def get_agreement(access_token, max_days):
     response = requests.post(url, headers=headers, json=agreement_json)
     return response.json()
 
-def main(tokens_file, agreement_file, max_days):
+def main(tokens_file, agreement_file, max_days=90):
     tokens_json = load_json(tokens_file)
     agreement_json = get_agreement(tokens_json['access'], max_days)
     save_json(agreement_json, agreement_file)
@@ -33,5 +33,5 @@ if __name__ == '__main__':
 
     tokens_file = sys.argv[1]
     agreement_file = sys.argv[2]
-    max_days = sys.argv[3] if len(sys.argv) == 4 else 730 # max for Belfius
+    max_days = sys.argv[3] if len(sys.argv) == 4 else 90
     main(tokens_file, agreement_file, max_days)

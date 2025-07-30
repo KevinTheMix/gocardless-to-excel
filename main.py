@@ -37,7 +37,6 @@ def get_link(tokens_file, agreement_file, link_file):
     except Exception as e:
         print(f'Error linking account: {e}')
         sys.exit(4)
-    return input('Paste the authorization code from the URL: ')
 
 def get_accounts(tokens_file, accounts_file, auth_code):
     print('Fetching accounts information…')
@@ -67,7 +66,8 @@ def main():
         get_tokens(secret_file, tokens_file)
         get_banks(tokens_file, banks_file)
         get_agreement(tokens_file, agreement_file)
-        auth_code = get_link(tokens_file, agreement_file, link_file)
+        get_link(tokens_file, agreement_file, link_file)
+        auth_code = input('Paste the authorization code from the URL: ')
         get_accounts(tokens_file, accounts_file, auth_code)
         get_transactions(tokens_file, accounts_file, transactions_file)
     append(transactions_file, excel_file)
@@ -75,7 +75,7 @@ def main():
 
 if __name__ == '__main__':
     if len(sys.argv) != 4 or sys.argv[3] not in ['0', '1']:
-        print('Usage: main.py <secret_file> <excel_file> <full_mode> (0:1)')
+        print('Usage: main.py <secret_file> <excel_file> <full_mode> (0: excel only, 1: full mode)')
         sys.exit(0)
 
     secret_file = sys.argv[1]    

@@ -11,7 +11,7 @@ def get_transactions_json(access_token, account_id):
     #print('Fetched transactions data')
     return response.json()
 
-def main(tokens_file, transactions_file):
+def main(tokens_file, accounts_file, transactions_file):
     tokens_json = load_json(tokens_file)
     accounts_json = load_json(accounts_file)
     transactions_json = get_transactions_json(tokens_json['access'], accounts_json['accounts'][0])
