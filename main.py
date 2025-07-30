@@ -75,7 +75,7 @@ def main():
 
 if __name__ == '__main__':
     if len(sys.argv) != 4 or sys.argv[3] not in ['0', '1']:
-        print('Usage: main.py <secret_file> <excel_file> <full_mode> (0:1)')
+        print('Usage: main.py <secret_file> <excel_file> <full_mode> (0: excel only, 1: full mode)')
         sys.exit(0)
 
     secret_file = sys.argv[1]    
