@@ -12,8 +12,8 @@ def get_banks_json(access_token):
     return response.json()
 
 def main(tokens_file, banks_file):
-    tokens_json = load_json(tokens_file)
-    banks_json = get_banks_json(tokens_json['access'])
+    access_token = load_json(tokens_file).get('access')
+    banks_json = get_banks_json(access_token)
     save_json(banks_json, banks_file)
 
 if __name__ == "__main__":

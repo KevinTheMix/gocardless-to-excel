@@ -17,7 +17,7 @@ Then uses pandas/openpyxl to parse that json and append it as rows in an existin
 
 ## [Developer Quickstart API Steps](https://developer.gocardless.com/bank-account-data/quick-start-guide)
 
-`/!\` Warning: all URLs must end with '/'.
+`/!\` All URLs must end with `/`
 
 * create a [user secret](https://bankaccountdata.gocardless.com/user-secrets)
 * HTTP POST to get access (& refresh) token, save it in a file
@@ -32,4 +32,6 @@ Then uses pandas/openpyxl to parse that json and append it as rows in an existin
 
 ## Usage
 
-* `*/main.py <secret_file> <excel_file> <excel_sheet>`
+* `.\go_venv\Scripts\Activate.ps1`
+* `main.py <secret_file> <excel_file> <excel_sheet>`
+* Build _.exe_ via `pyinstaller --onefile (--windowed) (--name gocardless.exe) main.py`

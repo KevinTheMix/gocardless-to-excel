@@ -186,12 +186,12 @@ def main(transactions_file, excel_file, sheet_name='Compte'):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: excel.py <transactions_file> <excel_file>")
+    if len(sys.argv) < 3:
+        print("Usage: excel.py <transactions_file> <excel_file> (<sheet_name>)")
         sys.exit(1)
 
     transactions_file = sys.argv[1]
     excel_file = sys.argv[2]
-    sheet_name = 'Compte'
+    sheet_name = sys.argv[3] if len(sys.argv) > 3 else 'Compte'
     main(transactions_file, excel_file, sheet_name)
 

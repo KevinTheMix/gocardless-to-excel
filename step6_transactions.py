@@ -12,9 +12,9 @@ def get_transactions_json(access_token, account_id):
     return response.json()
 
 def main(tokens_file, accounts_file, transactions_file):
-    tokens_json = load_json(tokens_file)
-    accounts_json = load_json(accounts_file)
-    transactions_json = get_transactions_json(tokens_json['access'], accounts_json['accounts'][0])
+    access_token = load_json(tokens_file).get('access')
+    accounts = load_json(accounts_file).get('accounts')
+    transactions_json = get_transactions_json(access_token, accounts[0])
     save_json(transactions_json, transactions_file)
 
 if __name__ == "__main__":

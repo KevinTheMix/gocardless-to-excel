@@ -22,8 +22,8 @@ def get_agreement(access_token, max_days):
     return response.json()
 
 def main(tokens_file, agreement_file, max_days=90):
-    tokens_json = load_json(tokens_file)
-    agreement_json = get_agreement(tokens_json['access'], max_days)
+    access_token = load_json(tokens_file).get('access')
+    agreement_json = get_agreement(access_token, max_days)
     save_json(agreement_json, agreement_file)
 
 if __name__ == '__main__':
