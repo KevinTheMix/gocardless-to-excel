@@ -72,15 +72,15 @@ def append(transactions_file, excel_file, sheet_name):
 
 def main():
     if full_mode == '1':
-        # get_tokens(secret_file, tokens_file)
-        # get_banks(tokens_file, banks_file)
-        # get_agreement(tokens_file, agreement_file)
-        # get_link(tokens_file, agreement_file, port, link_file)
+        get_tokens(secret_file, tokens_file)
+        get_banks(tokens_file, banks_file)
+        get_agreement(tokens_file, agreement_file)
+        get_link(tokens_file, agreement_file, port, link_file)
         # requisition_id = input('Paste the "ref" code from the URL: ')
         # return requisition_id.strip()
-        # get_requisition(port, requisition_file)
-        # get_accounts(tokens_file, accounts_file, requisition_file)
-        # get_transactions(tokens_file, accounts_file, transactions_file)
+        get_requisition(port, requisition_file)
+        get_accounts(tokens_file, accounts_file, requisition_file)
+        get_transactions(tokens_file, accounts_file, transactions_file)
         pass
     append(transactions_file, excel_file, 'Compte')
     print('All finished!\n')

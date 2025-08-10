@@ -3,6 +3,10 @@
 Goes through the steps of the [GoCardless web API](https://bankaccountdata.gocardless.com/companies/complete/developer) to produce a JSON containing the last transactions.
 Then uses pandas/openpyxl to parse that json and append it as rows in an existing Excel file (completing missing rows based on Transaction ID column).
 
+## Quick Tips
+
+* [GoCardless Subscriptions](https://bankaccountdata.gocardless.com/companies/upgrade-plan/info) = 50 free connections/month
+
 ## Glossary
 
 * **eIDAS** (Electronic Identification & Trust Services) = EU-wide legislation defining how to certify identity & signatures digitally
