@@ -90,6 +90,13 @@ def get_mode(sommaire):
     elif s.startswith('PARTICIPATION AUX FRAIS DE TENUE DE VOTRE COMPTE') or s.startswith('COUT GESTION CARTE DE DEBIT'): return 'Banque'
     else: return 'UNKNOWN'
 
+def format_bank_account(s: str) -> str:
+    """
+    Format a bank/IBAN string into 4-character groups separated by spaces.
+    Non-space characters are kept; spaces are stripped before grouping.
+    """
+    clean = ''.join(s.split()).upper()
+    return ' '.join(clean[i:i+4] for i in range(0, len(clean), 4))
 
 def format(excel_file, sheet_name, row_start=0):
     wb = load_workbook(excel_file)
@@ -128,6 +135,7 @@ def format(excel_file, sheet_name, row_start=0):
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=8, max_col=8):
         for cell in row: # Compte D
             cell.font = smallest_font
+            cell.value = format_bank_account(cell.value) if isinstance(cell.value, str) else cell.value
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=9, max_col=9):
         for cell in row: # Créditeur
             cell.alignment = Alignment(horizontal='left')
@@ -135,9 +143,11 @@ def format(excel_file, sheet_name, row_start=0):
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=10, max_col=10):
         for cell in row: # Compte C
             cell.font = smallest_font
+            cell.value = format_bank_account(cell.value) if isinstance(cell.value, str) else cell.value
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=12, max_col=12):
         for cell in row: # Quoi
             cell.alignment = Alignment(horizontal='left')
+            cell.font = small_font if len(cell.value) > 46 else font
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=13, max_col=13):
         for cell in row: # Communication
             cell.alignment = Alignment(horizontal='left')
