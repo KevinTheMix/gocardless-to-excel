@@ -32,12 +32,15 @@ def get_agreement(tokens_file, agreement_file):
         print(f'Error fetching end user agreement: {e}')
         sys.exit(3)
 
+# Get URL link and open it in browser.
 def get_link(tokens_file, agreement_file, port, link_file):
     print('Linking account…')
     try: step4_link.main(tokens_file, agreement_file, port, link_file)
     except Exception as e:
         print(f'Error linking account: {e}')
         sys.exit(4)
+
+# Listen on localhost to get the "ref" code and save it to requisition_file.
 def get_requisition(port, requisition_file):
     print('Starting local server to receive the "ref" code…')
     try:

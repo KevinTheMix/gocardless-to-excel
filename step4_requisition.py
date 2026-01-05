@@ -7,7 +7,7 @@ from lib.json_io import load_json, save_json
 from urllib.parse import urlparse, parse_qs
 
 def make_handler(requisition_file): # Factory function necessary to pass a parameter to handler (instantiated by HTTPServer)
-    class OAuthCallbackHandler(BaseHTTPRequestHandler):
+    class CallbackHandler(BaseHTTPRequestHandler):
         def do_GET(self):
             parsed_url = urlparse(self.path)
             query_params = parse_qs(parsed_url.query)
@@ -24,7 +24,7 @@ def make_handler(requisition_file): # Factory function necessary to pass a param
             self.wfile.write(b"<html><body>Authentication complete. You can close this window.</body></html>")
             threading.Thread(target=self.server.shutdown, daemon=True).start()
 
-    return OAuthCallbackHandler
+    return CallbackHandler
 
 def main(port, requisition_file):
     server_address = ('', port)

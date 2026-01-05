@@ -5,6 +5,7 @@ Then uses pandas/openpyxl to parse that json and append it as rows in an existin
 
 ## Quick Tips
 
+* [API Endpoints](https://bankaccountdata.gocardless.com/overview)
 * [GoCardless Subscriptions](https://bankaccountdata.gocardless.com/companies/upgrade-plan/info) = 50 free connections/month
 
 ## Glossary
@@ -27,10 +28,11 @@ Then uses pandas/openpyxl to parse that json and append it as rows in an existin
 * HTTP POST to get access (& refresh) token, save it in a file
 * (optional) HTTP GET banks list
 * (optional) HTTP POST end user agreement (can change history days)
-* HTTP POST to create a requisition (build a link to bank via OAuth)
-  * set <http://localhost> as return/redirect filler URL (leads nowhere, does not matter)
+* HTTP POST to create a requisition (authenticate with bank via an OAuth-like workflow)
   * POST response contains a _link_ (opened in a browser)
-  * after bank authentication (via ItsMe), browser gets redirected to localhost URL with a _ref_ parameter (ie requisition ID)
+  * Set <http://localhost> as return/redirect URL
+  * Authenticates (via ItsMe), then browser gets redirected to localhost URL with a requisition ID (in URL as a query parameter named _ref_)
+  * That requisition ID is actually a reference to that user's consent stored in GoCardless backend
 * HTTP GET accounts, passing requisition ID
 * HTTP GET transactions, passing account ID
 

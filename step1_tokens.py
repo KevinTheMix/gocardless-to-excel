@@ -41,7 +41,6 @@ def main(secret_file, tokens_file):
                 return
             except requests.HTTPError as e:
                 print(f"Failed to refresh token: {e}")
-                return
     
     print("Fetching new access token...")
     secret_json = load_json(secret_file)
