@@ -13,7 +13,8 @@ import re
 
 def prepare(df, preserve_words):
     df['Transaction ID'] = df['transactionId'].astype(str)
-    df['Date V/R'] = pd.to_datetime(df['valueDate'])
+    df['Date B'] = pd.to_datetime(df['bookingDate'])
+    df['Date V'] = pd.to_datetime(df['valueDate'])
     df['Débiteur'] = df['debtorName'].apply(lambda x: capitalize(x, preserve_words) if isinstance(x, str) else x)
     df['Compte D'] = df['debtorAccount'].apply(lambda x: x['iban'] if isinstance(x, dict) and 'iban' in x else None)
     df['Créditeur'] = df['creditorName'].apply(lambda x: capitalize(x, preserve_words) if isinstance(x, str) else x)
@@ -22,7 +23,7 @@ def prepare(df, preserve_words):
     df['Montant'] = df['transactionAmount'].apply(lambda x: float(x['amount']))
     df['Communication'] = df['additionalInformation']
     df['Sommaire'] = df['remittanceInformationUnstructured'].str.strip()
-    return df[['Transaction ID', 'Date V/R', 'Débiteur', 'Compte D', 'Créditeur', 'Compte C', 'Quoi', 'Montant', 'Communication', 'Sommaire']]
+    return df[['Transaction ID', 'Date B', 'Date V', 'Débiteur', 'Compte D', 'Créditeur', 'Compte C', 'Quoi', 'Montant', 'Communication', 'Sommaire']]
 
 def create(excel_file, sheet_name, df):
     df.to_excel(excel_file, sheet_name=sheet_name, index=False)
@@ -43,21 +44,22 @@ def append(excel_file, sheet_name, df):
     columns = {
         'Transaction ID': 1,    # A
         #'Mois': 2,             # B
-        'Date V/R': 3,          # C
-        #'D Buy/Fac': 4,        # D
-        #'Type': 5,             # E
-        #'Mode': 6,             # F
-        'Débiteur': 7,          # G
-        'Compte D': 8,          # H
-        'Créditeur': 9,         # I
-        'Compte C': 10,         # J
-        #'Shop': 11,            # K
-        'Quoi': 12,             # L
-        'Communication': 13,    # M
-        'Montant': 14,          # N
-        #'Total': 15,           # O
-        #'Commentaire':16       # P
-        'Sommaire': 17          # Q
+        'Date B': 3,            # C
+        'Date V': 4,            # D
+        #'D Buy/Fac': 5,        # E
+        #'Type': 6,             # F
+        #'Mode': 7,             # G
+        'Débiteur': 8,          # H
+        'Compte D': 9,          # I
+        'Créditeur': 10,        # J
+        'Compte C': 11,         # K
+        #'Shop': 12,            # L
+        'Quoi': 13,             # M
+        'Communication': 14,    # N
+        'Montant': 15,          # O
+        #'Total': 16,           # P
+        #'Commentaire':17       # Q
+        'Sommaire': 18          # R
     }
 
     wb = load_workbook(excel_file)
@@ -123,56 +125,59 @@ def format(excel_file, sheet_name, row_start=0):
     for i, row in enumerate(ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=2, max_col=2)):
         for cell in row: # Mois
             cell.font = small_font
-            #cell.value = '=PROPER(TEXT(INDIRECT("C" & ROW()), "[$-40C]mmmm"))'
-            cell.value = f'=PROPER(TEXT(C{row_start + i},"[$-40C]mmmm"))'
+            #cell.value = '=PROPER(TEXT(INDIRECT("D" & ROW()), "[$-40C]mmmm"))'
+            cell.value = f'=PROPER(TEXT(D{row_start + i},"[$-40C]mmmm"))'
     for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=3, max_col=3):
-        for cell in row: # Date V/R
+        for cell in row: # Date B
+            cell.number_format = 'yyyy.mm.dd'
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=4, max_col=4):
+        for cell in row: # Date V
             cell.number_format = 'yyyy.mm.dd'
 
-    for i, row in enumerate(ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=6, max_col=6)):
+    for i, row in enumerate(ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=7, max_col=7)):
         for cell in row: # Mode
-            cell.value = get_mode(ws.cell(row=row_start + i, column=17).value)
+            cell.value = get_mode(ws.cell(row=row_start + i, column=18).value)
 
-    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=7, max_col=7):
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=8, max_col=8):
         for cell in row: # Débiteur
             cell.alignment = Alignment(horizontal='left')
             cell.font = small_font if len(cell.value) > 26 else font
-    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=8, max_col=8):
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=9, max_col=9):
         for cell in row: # Compte D
             cell.font = smallest_font
             cell.value = format_bank_account(cell.value) if isinstance(cell.value, str) else cell.value
-    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=9, max_col=9):
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=10, max_col=10):
         for cell in row: # Créditeur
             cell.alignment = Alignment(horizontal='left')
             cell.font = small_font if len(cell.value) > 26 else font
-    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=10, max_col=10):
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=11, max_col=11):
         for cell in row: # Compte C
             cell.font = smallest_font
             cell.value = format_bank_account(cell.value) if isinstance(cell.value, str) else cell.value
-    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=12, max_col=12):
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=13, max_col=13):
         for cell in row: # Quoi
             cell.alignment = Alignment(horizontal='left')
             cell.font = small_font if len(cell.value) > 46 else font
-    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=13, max_col=13):
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=14, max_col=14):
         for cell in row: # Communication
             cell.alignment = Alignment(horizontal='left')
             cell.font = smaller_font
-    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=14, max_col=14):
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=15, max_col=15):
         for cell in row: # Montant
             cell.alignment = Alignment(horizontal='right')
             cell.font = small_font
             cell.number_format = '0.00'
-    for i, row in enumerate(ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=15, max_col=15)):
+    for i, row in enumerate(ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=16, max_col=16)):
         for cell in row: # Total
             cell.alignment = Alignment(horizontal='right')
             cell.font = bold_font
             cell.number_format = '0.00'
-            # cell.value = '=INDIRECT("N" & ROW())'
-            cell.value = f'=N{row_start + i}'
-    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=16, max_col=16):
+            # cell.value = '=INDIRECT("O" & ROW())'
+            cell.value = f'=O{row_start + i}'
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=17, max_col=17):
         for cell in row: # Commentaire
             cell.alignment = Alignment(horizontal='left')
-    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=17, max_col=17):
+    for row in ws.iter_rows(min_row=row_start, max_row=ws.max_row, min_col=18, max_col=18):
         for cell in row: # Sommaire
             cell.alignment = Alignment(horizontal='left')
             cell.font = smaller_font
@@ -200,7 +205,7 @@ def main(transactions_file, excel_file, sheet_name='Compte'):
     if match:
         year = int(match.group(1))
         initial_count = len(filtered)
-        filtered = filtered[filtered['Date V/R'].dt.year == year]
+        filtered = filtered[filtered['Date V'].dt.year == year]
         print(f"Filtered {initial_count - len(filtered)} transactions not belonging to year {year}")
 
     existing_ids = get_existing_ids(excel_file, sheet_name)
