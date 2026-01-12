@@ -9,6 +9,7 @@ import step1_tokens
 import step2_banks
 import step3_agreement
 import step4_link
+import step4_requisition
 import step5_accounts
 import step6_transactions
 import step7_excel
@@ -78,18 +79,7 @@ class GoCardlessGUI(tk.Tk):
         self.textbox.config(state='disabled')
         self.update_idletasks()
 
-    def ask_auth_code(self):
-        # Schedule the dialog on the main thread and wait for the result
-        self.auth_code = None
-        def get_code():
-            self.auth_code = simpledialog.askstring("Authorization Code", "Paste the authorization code from the URL:", parent=self)
-            self.waiting_for_auth = False
-        self.waiting_for_auth = True
-        self.after(0, get_code)
-        # Wait for the dialog to close
-        while self.waiting_for_auth:
-            self.update()
-        return self.auth_code
+
 
     def start_process(self):
         self.start_button.config(state='disabled')
@@ -110,21 +100,19 @@ class GoCardlessGUI(tk.Tk):
         banks_file = folder / 'banks.json'
         agreement_file = folder / 'agreement.json'
         link_file = folder / 'link.json'
+        requisition_file = folder / 'requisition.json'
         accounts_file = folder / 'accounts.json'
         transactions_file = folder / 'transactions.json'
+        port = 8080
 
         try:
             if full_mode == '1':
                 if not self.get_tokens(secret_file, tokens_file): return
                 if not self.get_banks(tokens_file, banks_file): return
                 if not self.get_agreement(tokens_file, agreement_file): return
-                if not self.get_link(tokens_file, agreement_file, link_file): return
-                auth_code = self.ask_auth_code()
-                if auth_code is None:
-                    self.log("Authorization code entry cancelled.")
-                    self.start_button.config(state='normal')
-                    return
-                if not self.get_accounts(tokens_file, accounts_file, auth_code): return
+                if not self.get_link(tokens_file, agreement_file, port, link_file): return
+                if not self.get_requisition(port, requisition_file): return
+                if not self.get_accounts(tokens_file, accounts_file, requisition_file): return
                 if not self.get_transactions(tokens_file, accounts_file, transactions_file): return
             if not self.append(transactions_file, excel_file): return
             self.log('All finished!\n')
@@ -159,19 +147,29 @@ class GoCardlessGUI(tk.Tk):
             self.log(f'Error fetching end user agreement: {e}')
             return False
 
-    def get_link(self, tokens_file, agreement_file, link_file):
+    def get_link(self, tokens_file, agreement_file, port, link_file):
         self.log('Linking account…')
         try:
-            step4_link.main(tokens_file, agreement_file, link_file)
+            step4_link.main(tokens_file, agreement_file, port, link_file)
             return True
         except Exception as e:
             self.log(f'Error linking account: {e}')
             return False
 
-    def get_accounts(self, tokens_file, accounts_file, auth_code):
+    def get_requisition(self, port, requisition_file):
+        self.log('Starting local server to receive the "ref" code…')
+        try:
+            step4_requisition.main(port, requisition_file)
+            self.log('Local server started. Please complete the authentication in your browser.')
+            return True
+        except Exception as e:
+            self.log(f'Error starting local server: {e}')
+            return False
+
+    def get_accounts(self, tokens_file, accounts_file, requisition_file):
         self.log('Fetching accounts information…')
         try:
-            step5_accounts.main(tokens_file, accounts_file, auth_code)
+            step5_accounts.main(tokens_file, accounts_file, requisition_file)
             return True
         except Exception as e:
             self.log(f'Error fetching accounts information: {e}')
@@ -189,7 +187,8 @@ class GoCardlessGUI(tk.Tk):
     def append(self, transactions_file, excel_file):
         self.log('Appending transactions to Excel file…')
         try:
-            step7_excel.main(transactions_file, excel_file)
+            sheet_name = 'Compte'
+            step7_excel.main(transactions_file, excel_file, sheet_name)
             return True
         except Exception as e:
             self.log(f'Error appending transactions to Excel file: {e}')

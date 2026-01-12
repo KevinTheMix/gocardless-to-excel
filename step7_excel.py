@@ -52,26 +52,31 @@ def append(excel_file, sheet_name, df):
     wb = load_workbook(excel_file)
     ws = wb[sheet_name]
 
-    # Find index of that ID in the DataFrame
-    last_known_id = ws[ws.max_row][0].value
-    if last_known_id in df['Transaction ID'].values:
-        last_index = df.index[df['Transaction ID'] == last_known_id][0]
-        df_to_append = df.iloc[last_index + 1:]
-    else:
-        df_to_append = df # If not found, assume entire DataFrame is new
+    # Get all existing Transaction IDs
+    # Iterate through column 1 (Transaction ID) and collect values
+    existing_ids = set()
+    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=1):
+        for cell in row:
+            if cell.value:
+                existing_ids.add(str(cell.value))
 
-    if df_to_append.shape[0] == 0: 
+    # Filter dataframe to keep only transactions NOT in existing_ids
+    # Ensure ID comparison is string vs string
+    df_to_append = df[~df['Transaction ID'].astype(str).isin(existing_ids)]
+
+    if df_to_append.empty: 
         print('Nothing to append; Excel file already up-to-date. Exiting~')
         sys.exit(0)
 
     # Write new rows
-    print(df_to_append.shape[0], 'new rows to append')
+    print(len(df_to_append), 'new rows to append')
     row_start = ws.max_row + 1
     df_to_append = df_to_append.fillna('-')
     for i, (_, row) in enumerate(df_to_append.iterrows(), start=row_start):
         for col_name, value in row.items():
-            j = columns[col_name]
-            ws.cell(row=i, column=j, value=value)
+            if col_name in columns:
+                j = columns[col_name]
+                ws.cell(row=i, column=j, value=value)
 
     wb.save(excel_file)
 
@@ -91,6 +96,7 @@ def get_mode(sommaire):
     elif s.startswith('REMBOURSEMENT'): return 'Remboursement'
     elif s.startswith('BANCONTACT REMBOURSEMENT'): return 'Remboursement'
     elif s.startswith('PAIEMENT DEBITMASTERCARD'): return 'Mastercard'
+    elif s.startswith('ARGENT RECU VIA VOTRE APP MOBILE BANKING') or s.startswith('VERSEMENT VIA WERO'): return 'App'
     elif s.startswith('PARTICIPATION AUX FRAIS DE TENUE DE VOTRE COMPTE') or s.startswith('COUT GESTION CARTE DE DEBIT'): return 'Banque'
     else: return 'UNKNOWN'
 

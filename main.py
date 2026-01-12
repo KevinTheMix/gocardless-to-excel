@@ -11,6 +11,7 @@ import step6_transactions
 import step7_excel
 import sys
 
+# Step 1: Get tokens from secret
 def get_tokens(secret_file, tokens_file):
     print('Fetching (access & refresh) tokens…')
     try: step1_tokens.main(secret_file, tokens_file)
@@ -18,6 +19,7 @@ def get_tokens(secret_file, tokens_file):
         print(f'Error fetching tokens: {e}')
         sys.exit(1)
 
+# Step 2: Get banks
 def get_banks(tokens_file, banks_file): 
     print('Fetching banks list…')
     try: step2_banks.main(tokens_file, banks_file)
@@ -25,6 +27,7 @@ def get_banks(tokens_file, banks_file):
         print(f'Error fetching banks list: {e}')
         sys.exit(2)
 
+# Step 3: Get user agreement
 def get_agreement(tokens_file, agreement_file):
     print('Fetching end user agreement…')
     try: step3_agreement.main(tokens_file, agreement_file)
@@ -32,15 +35,14 @@ def get_agreement(tokens_file, agreement_file):
         print(f'Error fetching end user agreement: {e}')
         sys.exit(3)
 
-# Get URL link and open it in browser.
+# Step 4.a: Get URL link and open it in browser.
 def get_link(tokens_file, agreement_file, port, link_file):
     print('Linking account…')
     try: step4_link.main(tokens_file, agreement_file, port, link_file)
     except Exception as e:
         print(f'Error linking account: {e}')
         sys.exit(4)
-
-# Listen on localhost to get the "ref" code and save it to requisition_file.
+# Step 4.b: Listen on localhost to get the "ref" code and save it to requisition_file.
 def get_requisition(port, requisition_file):
     print('Starting local server to receive the "ref" code…')
     try:
@@ -50,6 +52,7 @@ def get_requisition(port, requisition_file):
         print(f'Error starting local server: {e}')
         sys.exit(4)
 
+# Step 5: Get accounts
 def get_accounts(tokens_file, accounts_file, requisition_file):
     print('Fetching accounts information…')
     try: step5_accounts.main(tokens_file, accounts_file, requisition_file)
@@ -57,6 +60,7 @@ def get_accounts(tokens_file, accounts_file, requisition_file):
         print(f'Error fetching accounts information: {e}')
         sys.exit(5)
 
+# Step 6: Get transactions
 def get_transactions(tokens_file, accounts_file, transactions_file):
     print('Fetching transactions…')
     try:
@@ -65,6 +69,7 @@ def get_transactions(tokens_file, accounts_file, transactions_file):
         print(f'Error fetching transactions: {e}')
         sys.exit(6)
 
+# Step 7: Append to Excel file
 def append(transactions_file, excel_file, sheet_name):
     print('Appending transactions to Excel file…')
     try:
