@@ -9,13 +9,14 @@ import json
 import os
 import pandas as pd
 import sys
+import re
 
-def prepare(df, keep_words):
+def prepare(df, preserve_words):
     df['Transaction ID'] = df['transactionId'].astype(str)
     df['Date V/R'] = pd.to_datetime(df['valueDate'])
-    df['Débiteur'] = df['debtorName'].apply(lambda x: capitalize(x, keep_words) if isinstance(x, str) else x)
+    df['Débiteur'] = df['debtorName'].apply(lambda x: capitalize(x, preserve_words) if isinstance(x, str) else x)
     df['Compte D'] = df['debtorAccount'].apply(lambda x: x['iban'] if isinstance(x, dict) and 'iban' in x else None)
-    df['Créditeur'] = df['creditorName'].apply(lambda x: capitalize(x, keep_words) if isinstance(x, str) else x)
+    df['Créditeur'] = df['creditorName'].apply(lambda x: capitalize(x, preserve_words) if isinstance(x, str) else x)
     df['Compte C'] = df['creditorAccount'].apply(lambda x: x['iban'] if isinstance(x, dict) and 'iban' in x else None)
     df['Quoi'] = df['additionalInformation']
     df['Montant'] = df['transactionAmount'].apply(lambda x: float(x['amount']))
@@ -27,6 +28,16 @@ def create(excel_file, sheet_name, df):
     df.to_excel(excel_file, sheet_name=sheet_name, index=False)
     print("Created new Excel file with transaction data")
     sys.exit(0)
+
+def get_existing_ids(excel_file, sheet_name):
+    wb = load_workbook(excel_file)
+    ws = wb[sheet_name]
+    existing_ids = set()
+    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=1):
+        for cell in row:
+            if cell.value:
+                existing_ids.add(str(cell.value))
+    return existing_ids
 
 def append(excel_file, sheet_name, df):
     columns = {
@@ -52,27 +63,11 @@ def append(excel_file, sheet_name, df):
     wb = load_workbook(excel_file)
     ws = wb[sheet_name]
 
-    # Get all existing Transaction IDs
-    # Iterate through column 1 (Transaction ID) and collect values
-    existing_ids = set()
-    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=1):
-        for cell in row:
-            if cell.value:
-                existing_ids.add(str(cell.value))
-
-    # Filter dataframe to keep only transactions NOT in existing_ids
-    # Ensure ID comparison is string vs string
-    df_to_append = df[~df['Transaction ID'].astype(str).isin(existing_ids)]
-
-    if df_to_append.empty: 
-        print('Nothing to append; Excel file already up-to-date. Exiting~')
-        sys.exit(0)
-
     # Write new rows
-    print(len(df_to_append), 'new rows to append')
+    print(len(df), 'new rows to append')
     row_start = ws.max_row + 1
-    df_to_append = df_to_append.fillna('-')
-    for i, (_, row) in enumerate(df_to_append.iterrows(), start=row_start):
+    df = df.fillna('-')
+    for i, (_, row) in enumerate(df.iterrows(), start=row_start):
         for col_name, value in row.items():
             if col_name in columns:
                 j = columns[col_name]
@@ -191,6 +186,7 @@ def main(transactions_file, excel_file, sheet_name='Compte'):
 
     transactions = load_json(transactions_file)
     df = pd.DataFrame(transactions['transactions']['booked'])
+    # Prevents capitalization of words in preserve_words (e.g. "ASBL" -> "Asbl", "G.B.R.S." -> "G.b.r.s.")
     # df[::-1] inverts rows & reset_index makes it so index isn't reversed as well (making it pointless)
     filtered = prepare(df[::-1].reset_index(drop=True), { 'ASBL', 'G.B.R.S.' })   
 
@@ -199,9 +195,25 @@ def main(transactions_file, excel_file, sheet_name='Compte'):
         print('The Excel file must exist prior to using this script')
         sys.exit(2)
 
+    # Filter by year if present in filename
+    match = re.search(r'(\d{4})', os.path.basename(excel_file))
+    if match:
+        year = int(match.group(1))
+        initial_count = len(filtered)
+        filtered = filtered[filtered['Date V/R'].dt.year == year]
+        print(f"Filtered {initial_count - len(filtered)} transactions not belonging to year {year}")
+
+    existing_ids = get_existing_ids(excel_file, sheet_name)
+    # Filter dataframe to keep only transactions NOT in existing_ids
+    # Ensure ID comparison is string vs string
+    filtered = filtered[~filtered['Transaction ID'].astype(str).isin(existing_ids)]
+
+    if filtered.empty:
+        print('Nothing to append; Excel file already up-to-date. Exiting~')
+        sys.exit(0)
+
     row_start = append(excel_file, sheet_name, filtered)
-    format(excel_file, sheet_name, row_start)
-    #os.system('powershell -Command "Unblock-File -Path \'output.xlsx\'"') 
+    format(excel_file, sheet_name, row_start) 
 
 
 
