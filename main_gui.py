@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import scrolledtext, simpledialog, messagebox, filedialog
 from pathlib import Path
 import logging
+import json
 import step1_tokens
 import step2_banks
 import step3_agreement
@@ -60,17 +61,43 @@ class GoCardlessGUI(tk.Tk):
         self.start_button = tk.Button(self, text="Start", command=self.start_process)
         self.start_button.pack(pady=5)
 
+        self.load_config()
+
     def browse_secret(self):
         file = filedialog.askopenfilename(title="Select Secret File", filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")])
         if file:
             self.secret_entry.delete(0, tk.END)
             self.secret_entry.insert(0, file)
+            self.save_config()
 
     def browse_excel(self):
         file = filedialog.askopenfilename(title="Select Excel File", defaultextension=".xlsx", filetypes=[("Excel Files", "*.xlsx"), ("All Files", "*.*")])
         if file:
             self.excel_entry.delete(0, tk.END)
             self.excel_entry.insert(0, file)
+            self.save_config()
+
+    def load_config(self):
+        config_file = Path('config.json')
+        if config_file.exists():
+            try:
+                with open(config_file, 'r') as f:
+                    config = json.load(f)
+                self.secret_entry.insert(0, config.get('secret_file', ''))
+                self.excel_entry.insert(0, config.get('excel_file', ''))
+            except Exception as e:
+                self.log(f'Error loading config: {e}')
+
+    def save_config(self):
+        config = {
+            'secret_file': self.secret_entry.get(),
+            'excel_file': self.excel_entry.get()
+        }
+        try:
+            with open('config.json', 'w') as f:
+                json.dump(config, f, indent=4)
+        except Exception as e:
+            self.log(f'Error saving config: {e}')
 
     def log(self, message):
         self.textbox.config(state='normal')

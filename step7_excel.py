@@ -59,14 +59,15 @@ def append(excel_file, sheet_name, df):
         'Montant': 15,          # O
         #'Total': 16,           # P
         #'Commentaire':17       # Q
-        'Sommaire': 18          # R
+        'Sommaire': 18,         # R
+        #'OK': 19               # S
     }
 
     wb = load_workbook(excel_file)
     ws = wb[sheet_name]
 
     # Write new rows
-    print(len(df), 'new rows to append')
+    print(f"{len(df)} new rows to append")
     row_start = ws.max_row + 1
     df = df.fillna('-')
     for i, (_, row) in enumerate(df.iterrows(), start=row_start):
@@ -191,7 +192,7 @@ def main(transactions_file, excel_file, sheet_name='Compte'):
 
     transactions = load_json(transactions_file)
     df = pd.DataFrame(transactions['transactions']['booked'])
-    # Prevents capitalization of words in preserve_words (e.g. "ASBL" -> "Asbl", "G.B.R.S." -> "G.b.r.s.")
+    # Prevents capitalization of words in preserve_words (eg "ASBL" -> "Asbl", "G.B.R.S." -> "G.b.r.s.")
     # df[::-1] inverts rows & reset_index makes it so index isn't reversed as well (making it pointless)
     filtered = prepare(df[::-1].reset_index(drop=True), { 'ASBL', 'G.B.R.S.' })   
 
@@ -219,8 +220,6 @@ def main(transactions_file, excel_file, sheet_name='Compte'):
 
     row_start = append(excel_file, sheet_name, filtered)
     format(excel_file, sheet_name, row_start) 
-
-
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
